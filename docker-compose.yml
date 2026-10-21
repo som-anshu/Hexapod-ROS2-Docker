@@ -33,6 +33,7 @@ services:
 
     environment:
       DISPLAY: ${DISPLAY:-:0}
+      XAUTHORITY: ${XAUTHORITY:-}
       QT_X11_NO_MITSHM: "1"
       QT_QPA_PLATFORM: xcb
       # Software rendering so Gazebo works without a GPU. Delete this line if
@@ -43,6 +44,8 @@ services:
     volumes:
       # Gazebo / RViz windows on the host desktop (X11 over XWayland).
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      # The X access cookie, needed by XWayland and by Xorg with auth.
+      - ${XAUTHORITY:-/dev/null}:${XAUTHORITY:-/dev/null}:ro
       # Live-editable workspace source.
       - ./sim_and_real/ros2_ws_hex/src:/opt/hexapod_ws/src
 

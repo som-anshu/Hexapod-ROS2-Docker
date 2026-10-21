@@ -236,10 +236,23 @@ sudo systemctl start docker
 ```bash
 echo $DISPLAY            # e.g. :0
 ls /tmp/.X11-unix/       # must contain X0
-xhost +local:            # allow the container to connect
+echo $XAUTHORITY         # the X access cookie, must exist
 ```
 On Wayland, the Gazebo window is forwarded through XWayland, so `DISPLAY` must
-still be set. `run.sh` handles this automatically when `/tmp/.X11-unix` exists.
+still be set. `run.sh` handles all of this automatically: it mounts
+`/tmp/.X11-unix`, mounts and exports `XAUTHORITY`, and falls back to
+`xhost +local:` when no cookie file is available.
+
+**`no Qt platform plugin could be initialized`** — the container could not
+authenticate against the X server. This is the `XAUTHORITY` problem above; run
+`xhost +local:` manually as a quick check.
+
+**`MESA: error: Failed to query drm device` in the Gazebo log** — harmless.
+Mesa is probing for a DRM device that does not exist in a container and then
+falls back to zink/Vulkan. Check what is actually rendering with:
+```bash
+docker exec -it <container> glxinfo -B | grep "OpenGL renderer"
+```
 
 **Gazebo is very slow / black window** — you are on software rendering.
 Check with `nvidia-smi` inside the container; if there is no GPU, keep

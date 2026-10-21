@@ -68,8 +68,19 @@ if [ -n "${DISPLAY:-}" ] && [ -d /tmp/.X11-unix ]; then
     ARGS+=(--volume "/tmp/.X11-unix:/tmp/.X11-unix:rw")
     ARGS+=(--env "QT_X11_NO_MITSHM=1")
     ARGS+=(--env "QT_QPA_PLATFORM=xcb")
-    if [ -n "${XAUTHORITY:-}" ] && [ -f "${XAUTHORITY}" ]; then
-        ARGS+=(--volume "${XAUTHORITY}:${XAUTHORITY}:rw")
+
+    # The X server needs the right access cookie. Under XWayland that cookie
+    # lives in $XAUTHORITY, which has to be mounted *and* pointed at, or Qt
+    # fails with "no Qt platform plugin could be initialized".
+    if [ -n "${XAUTHORITY:-}" ] && [ -r "${XAUTHORITY}" ]; then
+        ARGS+=(--volume "${XAUTHORITY}:${XAUTHORITY}:ro")
+        ARGS+=(--env "XAUTHORITY=${XAUTHORITY}")
+    else
+        # No cookie available: let local clients (i.e. this container) in.
+        if command -v xhost >/dev/null 2>&1; then
+            xhost +local: >/dev/null 2>&1 \
+                && info "X11: no XAUTHORITY found, allowed local connections with 'xhost +local:'"
+        fi
     fi
     GUI_OK=1
 fi
