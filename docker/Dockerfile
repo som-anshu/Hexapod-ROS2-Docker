@@ -128,7 +128,50 @@ RUN source "/opt/ros/${ROS_DISTRO}/setup.bash" && \
     echo "alias cs='source ${WORKSPACE}/install/setup.bash'" >> /root/.bashrc
 
 # -----------------------------------------------------------------------------
-# 4. Entry point
+# 4. Environment
+#
+#    The values below are what "source setup.bash" produces for this image.
+#    Baking them in means "docker exec <container> ros2 topic list" works
+#    without going through a shell first. The shell hooks below source the
+#    same setup again, which is idempotent.
+# -----------------------------------------------------------------------------
+ENV AMENT_PREFIX_PATH="/opt/hexapod_ws/install/hexapod_moveit_config:/opt/hexapod_ws/install/hexapod_hardware:/opt/hexapod_ws/install/hexapod:/opt/hexapod_ws/install/hex_gz:/opt/hexapod_ws/install/hexapod_description:/opt/ros/jazzy" \
+    CMAKE_PREFIX_PATH="/opt/hexapod_ws/install/hexapod_moveit_config:/opt/hexapod_ws/install/hexapod_hardware:/opt/hexapod_ws/install/hexapod:/opt/hexapod_ws/install/hex_gz:/opt/hexapod_ws/install/hexapod_description:/opt/ros/jazzy/opt/gz_sim_vendor:/opt/ros/jazzy/opt/gz_sensors_vendor:/opt/ros/jazzy/opt/gz_physics_vendor:/opt/ros/jazzy/opt/sdformat_vendor:/opt/ros/jazzy/opt/gz_gui_vendor:/opt/ros/jazzy/opt/gz_transport_vendor:/opt/ros/jazzy/opt/gz_rendering_vendor:/opt/ros/jazzy/opt/gz_plugin_vendor:/opt/ros/jazzy/opt/gz_fuel_tools_vendor:/opt/ros/jazzy/opt/gz_msgs_vendor:/opt/ros/jazzy/opt/gz_common_vendor:/opt/ros/jazzy/opt/gz_math_vendor:/opt/ros/jazzy/opt/gz_utils_vendor:/opt/ros/jazzy/opt/gz_tools_vendor:/opt/ros/jazzy/opt/gz_ogre_next_vendor:/opt/ros/jazzy/opt/gz_dartsim_vendor:/opt/ros/jazzy/opt/gz_cmake_vendor" \
+    COLCON_PREFIX_PATH="/opt/hexapod_ws/install" \
+    GZ_CONFIG_PATH="/opt/ros/jazzy/opt/gz_sim_vendor/share/gz:/opt/ros/jazzy/opt/sdformat_vendor/share/gz:/opt/ros/jazzy/opt/gz_gui_vendor/share/gz:/opt/ros/jazzy/opt/gz_transport_vendor/share/gz:/opt/ros/jazzy/opt/gz_rendering_vendor/share/gz:/opt/ros/jazzy/opt/gz_plugin_vendor/share/gz:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/share/gz:/opt/ros/jazzy/opt/gz_msgs_vendor/share/gz:/opt/ros/jazzy/opt/gz_common_vendor/share/gz" \
+    GZ_SIM_SYSTEM_PLUGIN_PATH="/opt/ros/jazzy/lib" \
+    LD_LIBRARY_PATH="/opt/hexapod_ws/install/hexapod_hardware/lib:/opt/ros/jazzy/opt/gz_sim_vendor/lib:/opt/ros/jazzy/opt/gz_sensors_vendor/lib:/opt/ros/jazzy/opt/gz_physics_vendor/lib:/opt/ros/jazzy/opt/sdformat_vendor/lib:/opt/ros/jazzy/opt/rviz_ogre_vendor/lib:/opt/ros/jazzy/lib/x86_64-linux-gnu:/opt/ros/jazzy/opt/gz_gui_vendor/lib:/opt/ros/jazzy/opt/gz_transport_vendor/lib:/opt/ros/jazzy/opt/gz_rendering_vendor/lib:/opt/ros/jazzy/opt/gz_plugin_vendor/lib:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/lib:/opt/ros/jazzy/opt/gz_msgs_vendor/lib:/opt/ros/jazzy/opt/gz_common_vendor/lib:/opt/ros/jazzy/opt/gz_math_vendor/lib:/opt/ros/jazzy/opt/gz_utils_vendor/lib:/opt/ros/jazzy/opt/gz_tools_vendor/lib:/opt/ros/jazzy/opt/gz_ogre_next_vendor/lib:/opt/ros/jazzy/opt/gz_dartsim_vendor/lib:/opt/ros/jazzy/opt/gz_cmake_vendor/lib:/opt/ros/jazzy/lib" \
+    PATH="/opt/ros/jazzy/opt/gz_msgs_vendor/bin:/opt/ros/jazzy/opt/gz_tools_vendor/bin:/opt/ros/jazzy/opt/gz_ogre_next_vendor/bin:/opt/ros/jazzy/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
+    PYTHONPATH="/opt/ros/jazzy/opt/gz_sim_vendor/lib/python:/opt/ros/jazzy/opt/sdformat_vendor/lib/python:/opt/ros/jazzy/opt/gz_transport_vendor/lib/python:/opt/ros/jazzy/opt/gz_msgs_vendor/lib/python:/opt/ros/jazzy/lib/python3.12/site-packages" \
+    ROS_PYTHON_VERSION="3" \
+    ROS_VERSION="2" \
+    ROS_AUTOMATIC_DISCOVERY_RANGE="SUBNET" \
+    BASH_ENV="/etc/hexapod/ros2_env.sh"
+
+# -----------------------------------------------------------------------------
+# 5. Shell hooks
+#
+#    Ubuntu's default .bashrc returns early for non-interactive shells
+#    ("[ -z "$PS1" ] && return"), so the sourcing has to be put in front of
+#    it. $BASH_ENV covers "bash -c ...", /etc/profile.d covers login shells.
+# -----------------------------------------------------------------------------
+COPY docker/ros2_env.sh /etc/hexapod/ros2_env.sh
+RUN set -eu; \
+    { \
+        echo '# --- ROS 2 + hexapod workspace (added by the container image) ---'; \
+        echo '[ -f /etc/hexapod/ros2_env.sh ] && . /etc/hexapod/ros2_env.sh'; \
+        echo ''; \
+        cat /root/.bashrc; \
+    } > /root/.bashrc.new; \
+    mv /root/.bashrc.new /root/.bashrc; \
+    { \
+        echo '# ROS 2 + hexapod workspace (added by the container image)'; \
+        echo '[ -f /etc/hexapod/ros2_env.sh ] && . /etc/hexapod/ros2_env.sh'; \
+    } > /etc/profile.d/ros2.sh; \
+    chmod +x /etc/hexapod/ros2_env.sh
+
+# -----------------------------------------------------------------------------
+# 6. Entry point
 # -----------------------------------------------------------------------------
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh

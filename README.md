@@ -99,6 +99,33 @@ The image is built from `osrf/ros:jazzy-desktop` and the hexapod workspace is
 
 ---
 
+## The environment inside the container
+
+ROS 2 and the workspace are **already sourced** — you never have to source
+anything yourself:
+
+| How you open a shell | Where the environment comes from |
+| --- | --- |
+| `./run.sh` (the interactive shell) | the entry point, before `exec bash` |
+| `docker exec -it <name> bash` | `/root/.bashrc` |
+| `docker exec <name> bash -c "..."` | `$BASH_ENV` |
+| `docker exec <name> sh -c "..."` | the image environment |
+| `docker exec <name> ros2 topic list` | the image environment |
+
+The image bakes in the variables that `setup.bash` produces, so even a direct
+`docker exec` of a binary finds `ros2`, `gz` and `colcon` on the `PATH`.
+
+`/etc/hexapod/ros2_env.sh` is the single place where that happens, and every
+shell path above ends up running it. Sourcing it twice is harmless.
+
+### The hexapod runs in the container, not on your host
+
+The workspace targets **Jazzy + Gazebo Harmonic**. If your host has a
+different ROS 2 distro installed, running `ros2 launch hex_gz gazebo.launch.py`
+on the host will not work — launch it inside the container instead.
+
+---
+
 ## Everyday use
 
 ### Simulation (Gazebo)
