@@ -9,13 +9,19 @@
 #    * the workspace src -> live editing from your host
 #
 #  Usage:
-#      ./run.sh                 # interactive shell
+#      ./run.sh                 # launch the Gazebo simulation
+#      ./run.sh shell           # plain interactive shell, no simulation
 #      ./run.sh <command...>    # run a single command and exit
+#
+#  The simulation and the gait algorithms are two different programs, so they
+#  need two terminals:
+#      terminal 1:  ./run.sh
+#      terminal 2:  ./run.sh shell   ->  ros2 run hex_gz tri_gate.py
 # =============================================================================
 set -euo pipefail
 
 IMAGE_NAME="${IMAGE_NAME:-hexapod-ros2:jazzy}"
-CONTAINER_NAME="${CONTAINER_NAME:-hexapod-ros2}"
+BASE_NAME="${CONTAINER_NAME:-hexapod-ros2}"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WS_SRC="${REPO_ROOT}/sim_and_real/ros2_ws_hex/src"
 
@@ -23,13 +29,33 @@ BOLD=$'\033[1m'; GREEN=$'\033[32m'; YELLOW=$'\033[33m'; RESET=$'\033[0m'
 info() { printf '%s[+]%s %s\n' "$GREEN" "$RESET" "$*"; }
 warn() { printf '%s[!]%s %s\n' "$YELLOW" "$RESET" "$*"; }
 
-# --- 0. image present? ------------------------------------------------------
+# --- 0. mode ---------------------------------------------------------------
+#   sim  - launch the Gazebo simulation (default)
+#   shell - plain interactive shell, for driving the robot from a 2nd terminal
+#   anything else is run as a command inside the container
+#
+# Each mode gets its own container name, otherwise starting the shell would
+# remove the container that is running the simulation.
+MODE="sim"
+CONTAINER_NAME="${BASE_NAME}"
+if [ "$#" -gt 0 ]; then
+    if [ "$1" = "shell" ]; then
+        MODE="shell"
+        CONTAINER_NAME="${BASE_NAME}-shell"
+        shift
+    else
+        MODE="command"
+        CONTAINER_NAME="${BASE_NAME}-run"
+    fi
+fi
+
+# --- 1. image present? ------------------------------------------------------
 if ! docker image inspect "${IMAGE_NAME}" >/dev/null 2>&1; then
     echo "Image '${IMAGE_NAME}' not found. Run ./install.sh first." >&2
     exit 1
 fi
 
-# --- 1. replace a stale container -------------------------------------------
+# --- 2. replace a stale container of the same name ---------------------------
 if docker container inspect "${CONTAINER_NAME}" >/dev/null 2>&1; then
     info "Removing the previous '${CONTAINER_NAME}' container"
     docker rm --force "${CONTAINER_NAME}" >/dev/null
@@ -56,6 +82,14 @@ if docker info 2>/dev/null | grep -qi nvidia; then
     info "NVIDIA GPU detected - enabling GPU passthrough"
     ARGS+=(--gpus all --env "NVIDIA_DRIVER_CAPABILITIES=graphics,compute,utility")
     ARGS+=(--env "NVIDIA_VISIBLE_DEVICES=all")
+
+    # The NVIDIA runtime maps the host's device groups into the container.
+    # Without the matching entries in the container's /etc/group it complains
+    # "groups: cannot find name for group ID 990".
+    for grp in video render; do
+        gid="$(getent group "${grp}" 2>/dev/null | cut -d: -f3)"
+        [ -n "${gid}" ] && ARGS+=(--group-add "${gid}")
+    done
 else
     warn "No NVIDIA GPU detected - Gazebo will use software rendering (slower)"
     ARGS+=(--env "LIBGL_ALWAYS_SOFTWARE=1")
@@ -112,10 +146,25 @@ fi
 ARGS+=(--volume "${WS_SRC}:/opt/hexapod_ws/src")
 ARGS+=(--workdir /opt/hexapod_ws)
 
-# --- 6. command -------------------------------------------------------------
+# --- 7. command -------------------------------------------------------------
 # The image name must come before the command, so it is appended last.
-info "Starting '${CONTAINER_NAME}'"
-if [ "$#" -gt 0 ]; then
-    exec docker "${ARGS[@]}" "${IMAGE_NAME}" "$@"
-fi
-exec docker "${ARGS[@]}" "${IMAGE_NAME}" bash
+case "${MODE}" in
+    sim)
+        info "Starting '${CONTAINER_NAME}' with the Gazebo simulation"
+        info "In a second terminal use './run.sh shell' to drive the robot"
+        exec docker "${ARGS[@]}" "${IMAGE_NAME}" \
+            ros2 launch hex_gz gazebo.launch.py
+        ;;
+    shell)
+        if [ "$#" -eq 0 ]; then
+            info "Starting '${CONTAINER_NAME}' with a plain shell"
+            exec docker "${ARGS[@]}" "${IMAGE_NAME}" bash
+        fi
+        info "Starting '${CONTAINER_NAME}'"
+        exec docker "${ARGS[@]}" "${IMAGE_NAME}" "$@"
+        ;;
+    *)
+        info "Starting '${CONTAINER_NAME}'"
+        exec docker "${ARGS[@]}" "${IMAGE_NAME}" "$@"
+        ;;
+esac

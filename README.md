@@ -22,29 +22,42 @@ chmod +x install.sh run.sh
 ```
 
 `install.sh` builds the image (≈ 5 GB download the first time, ~15 min).
-When it finishes, start the container:
+When it finishes, start the simulation:
 
 ```bash
 ./run.sh
 ```
 
-You are now inside a shell with the hexapod workspace sourced. Launch the
-simulation:
+That starts the container and launches Gazebo straight away. A window opens
+with the hexapod standing on a slope, and the six leg controllers come up
+active.
+
+To make it walk, open a **second terminal** and use the shell mode:
 
 ```bash
-ros2 launch hex_gz gazebo.launch.py
-```
-
-A Gazebo window opens with the hexapod standing on a slope. Make it walk:
-
-```bash
+cd Hexapod-ROS2-Docker
+./run.sh shell
 ros2 run hex_gz tri_gate.py
 ```
+
+The two containers talk to each other over ROS 2, so the gait script in the
+second terminal drives the robot in the first one.
 
 > **One-liner alternative** (clone + build in one go):
 > ```bash
 > git clone https://github.com/som-anshu/Hexapod-ROS2-Docker.git && cd Hexapod-ROS2-Docker && chmod +x install.sh run.sh && ./install.sh
 > ```
+
+### `run.sh` modes
+
+| Command | What it does |
+| --- | --- |
+| `./run.sh` | launch the Gazebo simulation (container `hexapod-ros2`) |
+| `./run.sh shell` | plain shell in a second container (`hexapod-ros2-shell`) |
+| `./run.sh <command...>` | run one command and exit (`hexapod-ros2-run`) |
+
+Each mode uses its own container name, so starting the shell does **not**
+stop the simulation.
 
 ---
 
@@ -122,13 +135,22 @@ shell path above ends up running it. Sourcing it twice is harmless.
 
 The workspace targets **Jazzy + Gazebo Harmonic**. If your host has a
 different ROS 2 distro installed, running `ros2 launch hex_gz gazebo.launch.py`
-on the host will not work — launch it inside the container instead.
+on the host will not work — the `hex_gz` package is only built inside the
+container, and the Gazebo API differs between distro generations.
+
+Use `./run.sh` on the host, and the `ros2` commands inside the container.
 
 ---
 
 ## Everyday use
 
 ### Simulation (Gazebo)
+
+```bash
+./run.sh                                  # from the host
+```
+
+or, from inside the container:
 
 ```bash
 ros2 launch hex_gz gazebo.launch.py
