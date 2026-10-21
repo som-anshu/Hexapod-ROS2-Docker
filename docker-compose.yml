@@ -1,0 +1,50 @@
+# =============================================================================
+#  Hexapod ROS 2 System - docker compose
+#
+#  Equivalent to ./run.sh, for people who prefer compose.
+#
+#      docker compose up                 # interactive shell
+#      docker compose run --rm hexapod   # one-off shell
+# =============================================================================
+services:
+  hexapod:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        ROS_DISTRO: jazzy
+    image: hexapod-ros2:jazzy
+    container_name: hexapod-ros2
+    tty: true
+    stdin_open: true
+
+    # Host networking is required: ROS 2 DDS discovery relies on multicast,
+    # which Docker's default bridge network drops.
+    network_mode: host
+    ipc: host
+    shm_size: 2gb
+
+    cap_add:
+      - SYS_NICE
+    ulimits:
+      rtprio: 99
+      rttime: -1
+      memlock: -1
+
+    environment:
+      DISPLAY: ${DISPLAY:-:0}
+      QT_X11_NO_MITSHM: "1"
+      QT_QPA_PLATFORM: xcb
+      # Software rendering so Gazebo works without a GPU. Delete this line if
+      # you have an NVIDIA GPU and the NVIDIA container toolkit installed.
+      LIBGL_ALWAYS_SOFTWARE: "1"
+      NVIDIA_DRIVER_CAPABILITIES: graphics,compute,utility
+
+    volumes:
+      # Gazebo / RViz windows on the host desktop (X11 over XWayland).
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      # Live-editable workspace source.
+      - ./sim_and_real/ros2_ws_hex/src:/opt/hexapod_ws/src
+
+    working_dir: /opt/hexapod_ws
+    command: bash

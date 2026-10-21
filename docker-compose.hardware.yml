@@ -1,0 +1,19 @@
+# =============================================================================
+#  Hardware (ESP32) override.
+#
+#  Passes the ESP32 serial port into the container so that
+#      ros2 launch hex_gz robot.launch.py port_name:=/dev/ttyUSB0
+#  can talk to the real robot.
+#
+#  Usage:
+#      docker compose -f docker-compose.yml -f docker-compose.hardware.yml up
+#
+#  Edit the "devices:" entry below if your ESP32 shows up as /dev/ttyACM0
+#  or on a different path.
+# =============================================================================
+services:
+  hexapod:
+    devices:
+      - /dev/ttyUSB0:/dev/ttyUSB0
+    group_add:
+      - dialout

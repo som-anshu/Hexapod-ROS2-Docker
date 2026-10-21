@@ -1,0 +1,36 @@
+Hexapod ROS 2 System — Docker Edition
+=====================================
+
+This repository packages the hexapod robot project for use inside a Docker
+container. It is a derivative work of:
+
+    Hexapod-ROS2-System
+    https://github.com/Siedmiu/Hexapod-ROS2-System
+    Original author: Bebo457 (Siedmiu) <bartekbab845@gmail.com>
+
+All robot models (URDF/xacro), meshes, gait algorithms, hardware interface
+and MoveIt configuration in `sim_and_real/` and `Sim Models/` are the original
+work of the upstream author and remain under their respective licences, as
+declared in each `package.xml`:
+
+    hex_gz                  Apache-2.0
+    hexapod                 Apache-2.0
+    hexapod_description     Apache-2.0
+    hexapod_hardware        Apache-2.0
+    hexapod_moveit_config   BSD-3-Clause
+
+The Docker packaging added in this repository (the `docker/` directory,
+`install.sh`, `run.sh`, `docker-compose*.yml` and the rewritten `README.md`)
+was added to run the project on ROS 2 Jazzy + Gazebo Harmonic in a container,
+and is distributed under the same Apache-2.0 terms.
+
+The initial setup and configuration patterns of the upstream project were
+inspired by the ROBOTIS open_manipulator project
+(https://github.com/ROBOTIS-GIT/open_manipulator).
+
+Third-party components used at runtime, each under its own licence:
+  - ROS 2 Jazzy Jalisco  - Apache-2.0 / BSD-3-Clause
+  - Gazebo Harmonic     - Apache-2.0
+  - MoveIt 2            - BSD-3-Clause
+  - ros2_control        - Apache-2.0
+  - ros_gz              - Apache-2.0

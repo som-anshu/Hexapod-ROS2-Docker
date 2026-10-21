@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<robot name="hexapod" xmlns:xacro="http://ros.org/wiki/xacro">
+    <!-- MoveIt configuration for real hardware interface -->
+    <!-- This file is optimized for physical robot control -->
+    <!-- Used by demo.launch.py when hardware mode is selected -->
+    <!-- Default fake_hardware=true allows safe MoveIt testing without real robot -->
+    
+    <!-- Robot naming and identification -->
+    <xacro:arg name="prefix" default="" />
+    
+    <!-- Hardware interface selection for real robot -->
+    <xacro:arg name="use_gazebo" default="false" />
+    <!-- Default to fake hardware for safe MoveIt algorithm testing -->
+    <xacro:arg name="use_fake_hardware" default="true" />
+    <xacro:arg name="fake_sensor_commands" default="false" />
+    
+    <!-- ESP32 communication parameters for real hardware deployment -->
+    <xacro:arg name="port_name" default="/dev/ttyUSB0" />
+    <xacro:arg name="baud_rate" default="115200" />
+    
+    <!-- Include main hexapod definition from description package -->
+    <xacro:include filename="$(find hexapod_description)/urdf/hexapod_ee.urdf.xacro" />
+    
+    <!-- Create hexapod robot for MoveIt hardware interface -->
+    <xacro:hexapod_ee 
+        use_sim="true" 
+        prefix="$(arg prefix)" 
+        use_gazebo="$(arg use_gazebo)" 
+        use_fake_hardware="$(arg use_fake_hardware)"
+        fake_sensor_commands="$(arg fake_sensor_commands)"
+        port_name="$(arg port_name)"
+        baud_rate="$(arg baud_rate)" />
+</robot>

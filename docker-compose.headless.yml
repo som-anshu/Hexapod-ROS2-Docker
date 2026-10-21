@@ -1,0 +1,18 @@
+# =============================================================================
+#  Headless profile - runs Gazebo inside a virtual framebuffer (Xvfb).
+#
+#  Use on a machine without a display, or over SSH without X forwarding:
+#      docker compose -f docker-compose.yml -f docker-compose.headless.yml up
+#
+#  Gazebo then renders offscreen. You can still drive the robot over ROS 2 and
+#  capture images with the ros_gz image tooling.
+# =============================================================================
+services:
+  hexapod:
+    environment:
+      DISPLAY: ":99"
+    entrypoint:
+      - /usr/bin/xvfb-run
+      - -a
+      - --server-args=-screen 0 1280x1024x24
+    command: ["bash"]

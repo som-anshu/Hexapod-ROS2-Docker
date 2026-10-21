@@ -1,0 +1,124 @@
+<?xml version="1.0"?>
+<!--
+Gazebo-Specific Configuration File for Hexapod Robot
+
+This file contains all direct Gazebo references and configurations for the hexapod robot,
+including main physics parameters (friction, contact dynamics, material properties).
+
+Key components:
+- Physics parameters for collision surfaces and contact dynamics
+- Material properties for realistic simulation behavior  
+- Contact sensors for ground detection feedback
+-->
+
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <xacro:macro name="hexapod_gazebo" params="prefix">
+
+  <!-- GAZEBO PHYSICS PARAMETERS FOR STANDARD LINKS                     -->
+
+  <xacro:macro name="Link" params="reference">
+    <gazebo reference="${reference}">
+        <collision>
+            <surface>
+                <friction>
+                    <ode>
+                        <!-- Main physics parameters: moderate friction for internal components -->
+                        <mu>0.6</mu>
+                        <mu2>0.6</mu2>
+                    </ode>
+                </friction>
+                <contact>
+                    <ode>
+                        <!-- Contact dynamics parameters for stable simulation -->
+                        <kp>1000.0</kp>
+                        <kd>10.0</kd>
+                        <min_depth>0.001</min_depth>
+                        <max_vel>0.1</max_vel>
+                    </ode>
+                </contact>
+            </surface>
+        </collision>
+    </gazebo>
+  </xacro:macro>
+
+  <!-- GAZEBO PHYSICS PARAMETERS FOR END EFFECTORS                      -->
+
+   <xacro:macro name="EndEffectorLink" params="reference index">
+    <gazebo reference="${reference}">
+        <collision>
+            <surface>
+                <friction>
+                    <ode>
+                        <!-- friction parameters consistent with the real robot model  -->
+                        <mu>0.7</mu>
+                        <mu2>0.7</mu2>
+                    </ode>
+                </friction>
+                <contact>
+                    <ode>
+                        <!-- parameters simulating ground stiffness -->
+                        <kp>820.0</kp>                
+                        <kd>100.0</kd>              
+                        <min_depth>0.0</min_depth>
+                        <max_vel>1.0</max_vel>
+                    </ode>
+                </contact>
+            </surface>
+        </collision>
+    </gazebo>
+    
+    <!-- Gazebo contact sensor for ground detection placed in the tips of each leg -->
+    <gazebo reference="${prefix}link4_${index}">
+      <sensor name='sensor_contact_${index}' type='contact'>
+          <contact>
+               <collision>link4_${index}_fixed_joint_lump__link5_${index}_collision_4</collision>
+          </contact>
+      </sensor>
+    </gazebo>
+   </xacro:macro>
+
+  <!-- GAZEBO REFERENCES FOR ALL ROBOT LINKS                            -->
+
+  <!-- Main physics parameters applied to platform -->
+  <xacro:Link reference="${prefix}base_link"/>
+  
+  <!-- Leg 1 links with physics parameters -->
+  <xacro:Link reference="${prefix}link1_1"/>
+  <xacro:Link reference="${prefix}link2_1"/>
+  <xacro:Link reference="${prefix}link3_1"/>
+  <xacro:EndEffectorLink reference="${prefix}link4_1" index="1"/>
+
+  <!-- Leg 2 links with physics parameters -->
+  <xacro:Link reference="${prefix}link1_2"/>
+  <xacro:Link reference="${prefix}link2_2"/>
+  <xacro:Link reference="${prefix}link3_2"/>
+  <xacro:EndEffectorLink reference="${prefix}link4_2" index="2"/>
+  
+  <!-- Leg 3 links with physics parameters -->
+  <xacro:Link reference="${prefix}link1_3"/>
+  <xacro:Link reference="${prefix}link2_3"/>
+  <xacro:Link reference="${prefix}link3_3"/>
+  <xacro:EndEffectorLink reference="${prefix}link4_3" index="3"/>
+  
+  <!-- Leg 4 links with physics parameters -->
+  <xacro:Link reference="${prefix}link1_4"/>
+  <xacro:Link reference="${prefix}link2_4"/>
+  <xacro:Link reference="${prefix}link3_4"/>
+  <xacro:EndEffectorLink reference="${prefix}link4_4" index="4"/>
+  
+  <!-- Leg 5 links with physics parameters -->
+  <xacro:Link reference="${prefix}link1_5"/>
+  <xacro:Link reference="${prefix}link2_5"/>
+  <xacro:Link reference="${prefix}link3_5"/>
+  <xacro:EndEffectorLink reference="${prefix}link4_5" index="5"/>
+  
+  <!-- Leg 6 links with physics parameters -->
+  <xacro:Link reference="${prefix}link1_6"/>
+  <xacro:Link reference="${prefix}link2_6"/>
+  <xacro:Link reference="${prefix}link3_6"/>
+  <xacro:EndEffectorLink reference="${prefix}link4_6" index="6"/>
+
+  </xacro:macro>
+
+</robot>

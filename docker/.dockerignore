@@ -1,0 +1,14 @@
+# Keep the Docker build context small: only the ROS 2 workspace source is
+# copied into the image.
+.git
+.gitignore
+**/build/
+**/install/
+**/log/
+**/.vscode/
+**/__pycache__/
+**/*.pyc
+Sim Models/
+docs/
+*.bag
+*.pdf
