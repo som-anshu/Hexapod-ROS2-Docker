@@ -30,14 +30,17 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 #    three stale "om_*" open_manipulator dependencies that the `hexapod`
 #    package still lists in its package.xml (those packages are not used).
 # -----------------------------------------------------------------------------
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update
+RUN apt-get install -y --no-install-recommends \
+      # -- Gazebo Harmonic itself (gz-sim 8) and the "gz" command line ------
+      ros-${ROS_DISTRO}-gz-sim-vendor \
+      ros-${ROS_DISTRO}-gz-tools-vendor \
       # -- ros_gz: Gazebo Harmonic <-> ROS 2 bridge, used by hex_gz ----------
       ros-${ROS_DISTRO}-ros-gz-bridge \
       ros-${ROS_DISTRO}-ros-gz-sim \
       ros-${ROS_DISTRO}-ros-gz-image \
       ros-${ROS_DISTRO}-ros-gz-interfaces \
       ros-${ROS_DISTRO}-gz-ros2-control \
-      ros-${ROS_DISTRO}-gz-sim-plugins \
       # -- ros2_control: joint trajectory + state broadcast controllers ------
       ros-${ROS_DISTRO}-ros2-control \
       ros-${ROS_DISTRO}-ros2-controllers \
@@ -53,14 +56,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       ros-${ROS_DISTRO}-moveit-ros-perception \
       ros-${ROS_DISTRO}-moveit-configs-utils \
       ros-${ROS_DISTRO}-moveit-setup-assistant \
-      ros-${ROS_DISTRO}-warehouse-ros-mongo \
+      ros-${ROS_DISTRO}-moveit-ros-warehouse \
       # -- description / tooling --------------------------------------------
       ros-${ROS_DISTRO}-robot-state-publisher \
       ros-${ROS_DISTRO}-joint-state-publisher \
       ros-${ROS_DISTRO}-joint-state-publisher-gui \
       ros-${ROS_DISTRO}-xacro \
       ros-${ROS_DISTRO}-rviz2 \
-      ros-${ROS_DISTRO}-rospy \
       # -- python helpers used by the hex_gz scripts -------------------------
       python3-numpy \
       python3-matplotlib \
@@ -68,6 +70,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       python3-websockets \
       python3-websocket \
       python3-transforms3d \
+      python3-tk \
       python3-colcon-common-extensions \
       # -- build tooling ----------------------------------------------------
       build-essential \
@@ -90,7 +93,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       xvfb \
       # -- serial port access for the ESP32 hardware interface --------------
       usbutils \
-      && rm -rf /var/lib/apt/lists/*
+      && apt-get clean
 
 # -----------------------------------------------------------------------------
 # 2. Workspace source
