@@ -21,7 +21,7 @@ WS_SRC="${REPO_ROOT}/sim_and_real/ros2_ws_hex/src"
 
 BOLD=$'\033[1m'; GREEN=$'\033[32m'; YELLOW=$'\033[33m'; RESET=$'\033[0m'
 info() { printf '%s[+]%s %s\n' "$GREEN" "$RESET" "$*"; }
-warn() { printf '%[!]%s %s\n' "$YELLOW" "$RESET" "$*"; }
+warn() { printf '%s[!]%s %s\n' "$YELLOW" "$RESET" "$*"; }
 
 # --- 0. image present? ------------------------------------------------------
 if ! docker image inspect "${IMAGE_NAME}" >/dev/null 2>&1; then
@@ -36,7 +36,7 @@ if docker container inspect "${CONTAINER_NAME}" >/dev/null 2>&1; then
 fi
 
 ARGS=(
-    run --rm --interactive --tty
+    run --rm --interactive
     --name "${CONTAINER_NAME}"
     --network host
     --ipc host
@@ -46,6 +46,10 @@ ARGS=(
     --ulimit rttime=-1
     --ulimit memlock=-1
 )
+
+# Only request a TTY when we are actually running on one, otherwise
+# "docker run" refuses to start.
+[ -t 0 ] && ARGS+=(--tty)
 
 # --- 2. GPU (optional, NVIDIA only) -----------------------------------------
 if docker info 2>/dev/null | grep -qi nvidia; then
@@ -98,11 +102,9 @@ ARGS+=(--volume "${WS_SRC}:/opt/hexapod_ws/src")
 ARGS+=(--workdir /opt/hexapod_ws)
 
 # --- 6. command -------------------------------------------------------------
-if [ "$#" -gt 0 ]; then
-    ARGS+=("$@")
-else
-    ARGS+=(bash)
-fi
-
+# The image name must come before the command, so it is appended last.
 info "Starting '${CONTAINER_NAME}'"
-exec docker "${ARGS[@]}" "${IMAGE_NAME}"
+if [ "$#" -gt 0 ]; then
+    exec docker "${ARGS[@]}" "${IMAGE_NAME}" "$@"
+fi
+exec docker "${ARGS[@]}" "${IMAGE_NAME}" bash

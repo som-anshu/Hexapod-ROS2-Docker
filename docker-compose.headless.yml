@@ -10,9 +10,7 @@
 services:
   hexapod:
     environment:
-      DISPLAY: ":99"
-    entrypoint:
-      - /usr/bin/xvfb-run
-      - -a
-      - --server-args=-screen 0 1280x1024x24
+      # The entrypoint starts an Xvfb virtual display automatically when no
+      # host display is reachable, so nothing else is needed here.
+      LIBGL_ALWAYS_SOFTWARE: "1"
     command: ["bash"]

@@ -18,7 +18,8 @@ ENV DEBIAN_FRONTEND=noninteractive \
     ROS_DISTRO=${ROS_DISTRO} \
     WORKSPACE=${WORKSPACE} \
     LANG=C.UTF-8 \
-    LC_ALL=C.UTF-8
+    LC_ALL=C.UTF-8 \
+    DISPLAY=:99
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -100,6 +101,14 @@ RUN apt-get install -y --no-install-recommends \
 # -----------------------------------------------------------------------------
 WORKDIR ${WORKSPACE}
 COPY sim_and_real/ros2_ws_hex/src/ ${WORKSPACE}/src/
+
+# The workspace is built with --symlink-install, so the executables in
+# install/ are symlinks to these files and keep their source permissions.
+# Make sure the scripts that are installed as programs are executable, even if
+# the files arrived without the execute bit.
+RUN chmod +x ${WORKSPACE}/src/hex_gz/scripts/*.py \
+             ${WORKSPACE}/src/hex_gz/scripts_m/*.py \
+             ${WORKSPACE}/src/hexapod_description/contact/*.py
 
 # -----------------------------------------------------------------------------
 # 3. Build the workspace

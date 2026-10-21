@@ -5,7 +5,11 @@
 #  Sources ROS 2 and the hexapod overlay workspace, then hands control to the
 #  command passed on the docker run / compose "command:" line.
 # =============================================================================
-set -euo pipefail
+set -eo pipefail
+
+# NOTE: "set -u" is deliberately NOT used. The ROS 2 setup scripts reference
+# unset variables (AMENT_TRACE_SETUP_FILES, COLCON_TRACE, ...) and abort under
+# "nounset".
 
 ROS_DISTRO="${ROS_DISTRO:-jazzy}"
 WORKSPACE="${WORKSPACE:-/opt/hexapod_ws}"
@@ -31,8 +35,36 @@ export GZ_PYTHON_PATH="${GZ_PYTHON_PATH:-/opt/ros/${ROS_DISTRO}/opt/gz_sim_vendo
 export QT_X11_NO_MITSHM=1
 export QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-xcb}"
 
+# --- virtual framebuffer ----------------------------------------------------
+# Several hex_gz scripts call matplotlib.use('TkAgg'), and Gazebo needs a
+# display to render at all. If the host display is not reachable from inside
+# the container, start a virtual one so the scripts still run.
+#
+# The image sets DISPLAY=:99 by default, and run.sh overrides it with the
+# host's display, so "docker exec" sessions find the same one.
+VIRTUAL_DISPLAY=":99"
+
+display_reachable() {
+    [ -n "${DISPLAY:-}" ] || return 1
+    local spec="${DISPLAY##*:}"   # drop "host:" prefix
+    local num="${spec%%.*}"       # drop ".0" screen suffix
+    [ -e "/tmp/.X11-unix/X${num}" ]
+}
+
+if ! display_reachable; then
+    if [ ! -e "/tmp/.X${VIRTUAL_DISPLAY#:}-lock" ]; then
+        Xvfb "${VIRTUAL_DISPLAY}" -screen 0 1280x1024x24 >/tmp/xvfb.log 2>&1 &
+        sleep 1
+    fi
+    export DISPLAY="${VIRTUAL_DISPLAY}"
+    echo "entrypoint: no host display reachable, using virtual display ${DISPLAY}"
+fi
+
+# Make the display visible to interactive shells started later.
+echo "export DISPLAY='${DISPLAY}'" >> /root/.bashrc
+
 # DDS discovery uses multicast; host networking (compose) keeps it working.
-export ROS_LOCALHOST_ONLY="${ROS_LOCALHOST_ONLY:-0}"
+export ROS_AUTOMATIC_DISCOVERY_RANGE="${ROS_AUTOMATIC_DISCOVERY_RANGE:-SUBNET}"
 export RMW_IMPLEMENTATION="${RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}"
 
 # Convenience: the workspace is the current directory.

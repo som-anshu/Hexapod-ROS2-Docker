@@ -187,23 +187,21 @@ Useful aliases are already set in the container's shell:
 
 ## Headless machines (no display)
 
-Run Gazebo inside a virtual framebuffer. Add this profile:
+Nothing special is needed. When the container cannot reach the host's X
+display, the entry point starts a virtual framebuffer (Xvfb) on `:99` and
+exports `DISPLAY` accordingly, so Gazebo renders offscreen and the gait
+scripts (which use `matplotlib`) still run. You can still drive the robot over
+ROS 2 and capture images with the `ros_gz` image tooling.
 
-```yaml
-# docker-compose.headless.yml
-services:
-  hexapod:
-    environment:
-      DISPLAY: ":99"
-    entrypoint: ["/usr/bin/xvfb-run", "-a", "--server-args=-screen 0 1280x1024x24"]
-```
+To force software rendering and skip the host display entirely, use the
+headless compose profile:
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.headless.yml up
 ```
 
-Gazebo then renders offscreen — you can still talk to the robot over ROS 2 and
-capture images with `ros2 run ros_gz image ...`.
+> If you `docker exec` into a running container, `DISPLAY` is already set to
+> the same value the entry point chose, so extra commands work unchanged.
 
 ---
 
