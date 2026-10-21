@@ -48,6 +48,23 @@ ros2 run hex_gz tri_gate.py
 
 ---
 
+## Verified
+
+This container has been exercised end to end:
+
+- `ros2 launch hex_gz gazebo.launch.py` starts Gazebo Harmonic with **zero
+  launch errors**, and all six leg controllers plus the joint state
+  broadcaster report `active`.
+- `ros2 run hex_gz tri_gate.py` drives the joints and the foot contact
+  sensors report `true` on touchdown.
+- `ros2 launch hexapod_moveit_config demo.launch.py` starts `move_group` and
+  RViz, and `/plan_kinematic_path`, `/get_planning_scene` and `/compute_ik`
+  are all served.
+- Everything above also works with **no display at all** (the entry point
+  starts a virtual framebuffer).
+
+---
+
 ## Requirements
 
 | Requirement | Notes |
@@ -56,7 +73,7 @@ ros2 run hex_gz tri_gate.py
 | **4 GB RAM** free | Gazebo is hungry; 8 GB+ recommended |
 | **~10 GB disk** | for the image and the build context |
 | **GPU** | optional. Without an NVIDIA GPU Gazebo uses software rendering (slow but works) |
-| **X11 / XWayland** | for the Gazebo and RViz windows. On a headless box use the Xvfb profile below |
+| **X11 / XWayland** | optional. Needed only for Gazebo/RViz windows; without it the container starts its own virtual display |
 
 Check your setup:
 
